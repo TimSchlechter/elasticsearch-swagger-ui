@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Swagger UI</title>
+  <title>Elasticsearch API</title>
   <link href='css/typography.css' media='screen' rel='stylesheet' type='text/css'/>
   <link href='css/reset.css' media='screen' rel='stylesheet' type='text/css'/>
   <link href='css/screen.css' media='screen' rel='stylesheet' type='text/css'/>
@@ -28,7 +28,7 @@
       if (url && url.length > 1) {
         url = decodeURIComponent(url[1]);
       } else {
-        url = "http://petstore.swagger.io/v2/swagger.json";
+        url = "/_swagger/v1.2";
       }
       window.swaggerUi = new SwaggerUi({
         url: url,
@@ -82,17 +82,121 @@
 
 <body class="swagger-section">
 <div id='header'>
-  <div class="swagger-ui-wrap">
-    <a id="logo" href="http://swagger.io">swagger</a>
-    <form id='api_selector'>
-      <div class='input'><input placeholder="http://example.com/api" id="input_baseUrl" name="baseUrl" type="text"/></div>
-      <div class='input'><input placeholder="api_key" id="input_apiKey" name="apiKey" type="text"/></div>
-      <div class='input'><a id="explore" href="#">Explore</a></div>
-    </form>
-  </div>
+    <div class="swagger-ui-wrap">
+        <ul id="categoriesList">
+        </ul>
+        <ul id="indexList">
+            index:
+            <li><a id="allLink" href="/_plugin/swagger" class="active">*</a></li>
+        </ul>
+
+        <ul id="aliasList">
+            alias:
+        </ul>
+    </div>
 </div>
 
 <div id="message-bar" class="swagger-ui-wrap">&nbsp;</div>
 <div id="swagger-ui-container" class="swagger-ui-wrap"></div>
+<script>
+   $(function() {
+        var categoriesList = $("#categoriesList"),
+            indexList = $("#indexList"),
+            aliasList = $("#aliasList");
+
+        $.getJSON("/_swagger/categories", function(response) {
+            $.each(response, function(idx, category) {
+                categoriesList.show();
+                categoriesList.append(createCategoryLink(category));
+            });
+        });
+
+        function createCategoryLink(category) {
+            var url = "/_swagger/v1.2?category=" + category,
+                li = $("<li>"),
+                link = $("<a>").appendTo(li);
+
+            link.attr('href', "/_plugin/swagger/?url=" + url);
+            link.text(category)
+
+            if (window.swaggerUi.options.url.lastIndexOf(url) >= 0) {
+                link.addClass('active');
+                $("#allLink").removeClass('active');
+            }
+
+            return li;
+        }
+
+        /*
+        $.getJSON("/_aliases", function(response) {
+            $.each(response, function(indexName, aliasesObject) {
+                indexList.show();
+                indexList.append(createIndexOrAliasLink("index", indexName));
+                $.each(aliasesObject.aliases, function(aliasName, alias) {
+                    aliasList.show();
+                    aliasList.append(createIndexOrAliasLink("alias", aliasName));
+                });
+            });
+        });
+
+        function createIndexOrAliasLink(indexOrAlias, name) {
+            var url = "/_swagger/" + indexOrAlias + "/" + name + "/v1.2",
+                li = $("<li>"),
+                link = $("<a>").appendTo(li);
+
+            link.attr('href', "/_plugin/swagger/?url=" + url);
+            link.text(indexOrAliasName)
+
+            if (window.swaggerUi.options.url.lastIndexOf(url) >= 0) {
+                link.addClass('active');
+                $("#allLink").removeClass('active');
+            }
+
+            return li;
+        }
+
+        // Override OperationView.submitOperation to hook in a confirm dialog
+        var originalSubmitOperation = OperationView.prototype.submitOperation;
+        OperationView.prototype.submitOperation = function(e) {
+            var shouldPrompt = $(e.target).closest('#Index_management_Delete_index').length === 1;
+
+            if (shouldPrompt) {
+                var promptedIndex = prompt('WARNING! This action will remove one or multiple indices. To confirm, type the name of the index you want to remove and press OK'),
+                    expectedIndex = $('.parameter[name=index]', e.target.form).val();
+
+                if (promptedIndex !== expectedIndex) {
+                    alert('Aborted');
+                    return false;
+
+                }
+            }
+
+            originalSubmitOperation.call(this, e);
+        }
+        */
+    });
+</script>
+<style>
+    #header ul { display: inline; margin-right: 10px;}
+    #header li { display: inline;  }
+    #header a { padding: 0 5px; text-decoration: none; }
+    #header a:link,
+    #header a:visited { color: white; }
+    #header a:hover  { background-color: #547f00; }
+
+    #header a.active  { background-color: #547f00; }
+
+    #header #categoriesList,
+    #header #indexList,
+    #header #aliasList { display: none; }
+
+    .swagger-section .swagger-ui-wrap .content p + pre { margin-top:0px; margin-bottom:10px;  }
+    .swagger-section .swagger-ui-wrap .content code {
+        font-family: 'Anonymous Pro', Menlo, Consolas, 'Bitstream Vera Sans Mono', 'Courier New', monospace;
+        font-size: 12px;
+        background-color: #fcf6db;
+        padding: 0 3px;
+    }
+</style>
 </body>
 </html>
